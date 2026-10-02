@@ -2,3 +2,4 @@ AIHumanLab smoke test trigger v1
 trigger-2
 trigger-after-parser-fix
 trigger-after-secret-fix
+full-render-smoke-v1
