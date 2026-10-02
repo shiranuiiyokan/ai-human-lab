@@ -18,15 +18,17 @@ jobs:
     timeout-minutes: 10
     env:
       PROJECT_NAMESPACE: AIHUMAN
+      QUEUE_SYNC_MODE: DRIVE_JOURNAL
       AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON }}
       AIHUMAN_YOUTUBE_CLIENT_ID: ${{ secrets.AIHUMAN_YOUTUBE_CLIENT_ID }}
       AIHUMAN_YOUTUBE_CLIENT_SECRET: ${{ secrets.AIHUMAN_YOUTUBE_CLIENT_SECRET }}
       AIHUMAN_YOUTUBE_REFRESH_TOKEN: ${{ secrets.AIHUMAN_YOUTUBE_REFRESH_TOKEN }}
       AIHUMAN_EXPECTED_CHANNEL_ID: 'UCMiOwznPHDPDlbNIQqEnNSQ'
+      AIHUMAN_DONE_FOLDER_ID: '1lXSvm0xncmlEOsyIjVFaB-vdRxZ5PVfV'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
-      - run: python automation/queue_sync.py
+      - run: python automation/result_journal.py

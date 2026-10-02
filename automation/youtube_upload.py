@@ -82,6 +82,7 @@ def upload_video(video_path: Path, job: dict):
         if progress:
             print(f"YouTube upload: {int(progress.progress()*100)}%")
     return {
+        "youtube_status": response.get("status", {}),
         "video_id": response["id"],
         "youtube_url": f"https://www.youtube.com/watch?v={response['id']}",
         "publish_at": publish_at,
