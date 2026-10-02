@@ -10,7 +10,8 @@ YouTubeチャンネル **AI人物研究（@AIHumanResearchJP）** 専用の自�
 - jobの `project_id` は `AIHUMAN-` 必須
 - 人物は原則20歳以上
 - YouTube upload前に **AI人物研究のChannel IDを照合**
-- Drive folder ID / OAuthは `AIHUMAN_...` Secretsだけを使用
+- Driveは人物側サービスアカウント、YouTubeは人物側OAuthのみ使用
+- 秘密情報は `AIHUMAN_...` GitHub Secretsのみ
 - 有料APIは使用しない
 
 ## パイプライン
@@ -20,17 +21,20 @@ ChatGPT Scheduled Task
 → GitHub Actions
 → VOICEVOX
 → FFmpeg
-→ AI人物研究 YouTubeへ予約投稿
+→ AI人物研究 YouTube
 → done / errorへ移動
 
 ## 現在の状態
-- 人物側Google Drive作成済み
-- 研究正本・初期Production Queue作成済み
+- 人物側Google Drive / 研究正本 / Production Queue 作成済み
 - GitHubレンダリング/アップロードコード実装済み
-- GitHub Actionsは**手動起動のみ**。OAuth/Secrets/E2E確認後に自動スケジュールを有効化する
+- Driveサービスアカウント疎通: PASS
+- YouTube OAuth / チャンネルID照合 / 非公開アップロード: PASS
+- Google Auth Platform: 本番環境へ移行済み
+- 本番環境移行後のRefresh token取り直しだけ保留（PC利用時に実施）
+- 通常のproduction workflowは手動起動のまま
 - ペット側repoは変更しない
 
-## 次に必要
-Google Cloudを人物側Googleアカウントで作成し、
-Drive API / YouTube Data API v3 / OAuth同意画面 / OAuth client を人物側専用で設定する。
-その後、人物側のGitHub Secretsを登録してE2Eテストする。
+## 音声設計
+Shortsも長尺も、scene単位で音声をぶつ切り生成しない。
+原則として動画1本につき連続したナレーション音声を先に生成し、visual sceneをその音声上に割り当てる。
+読み補正は全文ひらがな化せず、単語単位のpronunciation辞書を使う。
