@@ -1,2 +1,3 @@
 AIHumanLab smoke test trigger v1
 trigger-2
+trigger-after-parser-fix
