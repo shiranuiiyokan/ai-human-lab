@@ -1,6 +1,10 @@
 name: AI Human Lab production
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/runtime-trigger.txt"
   workflow_dispatch:
     inputs:
       short_limit:
@@ -34,12 +38,13 @@ jobs:
       AIHUMAN_LONG_FOLDER_ID: "1maSuDT9TysFUGWJaS0VlDfEWT_lgdAfC"
       AIHUMAN_DONE_FOLDER_ID: "1lXSvm0xncmlEOsyIjVFaB-vdRxZ5PVfV"
       AIHUMAN_ERROR_FOLDER_ID: "1bVfg3-pVXJUwBc4mV3IlZhHDlBdFh-H3"
-      SHORT_JOB_LIMIT: ${{ inputs.short_limit }}
-      LONG_JOB_LIMIT: ${{ inputs.long_limit }}
+      SHORT_JOB_LIMIT: ${{ inputs.short_limit || '3' }}
+      LONG_JOB_LIMIT: ${{ inputs.long_limit || '1' }}
       SHORTS_VOICE_SPEED: "1.30"
       LONG_VOICE_SPEED: "1.20"
       VOICEVOX_SPEAKER_NAME: "春日部つむぎ"
       VOICEVOX_STYLE_NAME: "ノーマル"
+      VOICEVOX_CREDIT: "VOICEVOX:春日部つむぎ"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
