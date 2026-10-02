@@ -10,8 +10,51 @@ from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 def drive_credentials():
-    raw = os.environ["AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON"]
-    info = json.loads(raw)
+    raw = os.environ["AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON"].strip()
+
+    # GitHub Secrets pasted from mobile may occasionally include quotes,
+    # code fences, or surrounding text. Normalize common safe cases without
+    # ever printing the credential.
+    candidates = [raw]
+    if raw.startswith('"') and raw.endswith('"'):
+        try:
+            unwrapped = json.loads(raw)
+            if isinstance(unwrapped, str):
+                candidates.append(unwrapped.strip())
+        except json.JSONDecodeError:
+            pass
+
+    first = raw.find("{")
+    last = raw.rfind("}")
+    if first != -1 and last > first:
+        candidates.append(raw[first:last + 1])
+
+    info = None
+    last_error = None
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, str):
+                parsed = json.loads(parsed)
+            if isinstance(parsed, dict):
+                info = parsed
+                break
+        except (json.JSONDecodeError, TypeError) as exc:
+            last_error = exc
+
+    if not info:
+        raise RuntimeError(
+            "AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON is not valid service-account JSON. "
+            "Re-save the GitHub secret using the complete contents from the downloaded JSON file."
+        ) from last_error
+
+    required = {"type", "project_id", "private_key", "client_email", "token_uri"}
+    missing = sorted(required - set(info))
+    if missing:
+        raise RuntimeError(
+            "Service-account JSON is missing required fields: " + ", ".join(missing)
+        )
+
     return service_account.Credentials.from_service_account_info(info, scopes=DRIVE_SCOPES)
 
 def build_drive_service():
