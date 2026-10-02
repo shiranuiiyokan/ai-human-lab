@@ -21,3 +21,9 @@ playlist=ch["contentDetails"]["relatedPlaylists"]["uploads"]
 items=yt.playlistItems().list(part="snippet,contentDetails",playlistId=playlist,maxResults=10).execute().get("items",[])
 for item in items:
     print("VIDEO", item["contentDetails"]["videoId"], "|", item["snippet"]["title"])
+
+ids=[item["contentDetails"]["videoId"] for item in items]
+if ids:
+    details=yt.videos().list(part="status",id=",".join(ids)).execute().get("items",[])
+    for v in details:
+        print("STATUS",v["id"],"|",v.get("status",{}).get("privacyStatus"))
