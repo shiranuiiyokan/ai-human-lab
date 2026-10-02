@@ -1,1 +1,1 @@
-2026-10-03T08:30:00+09:00 Q-20261003-1200 HR-001 immediate public; Q-20261003-2000 HR-002 publishAt 2026-10-03T13:00:00Z
+2026-10-03T08:34:00+09:00 recover HR001/HR002 before any upload; precreated result/error journals ready. HR001 public, HR002 22:00 JST.
