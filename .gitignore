@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.DS_Store
+.env
+work/
+output/
+*.mp4
+*.wav
+*.png
+*.jpg
+*.jpeg
+oauth*.json
+client_secret*.json
+token*.json
