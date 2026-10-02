@@ -6,7 +6,7 @@
   "production": {
     "daily_shorts": 2,
     "weekly_long": 1,
-    "shorts_voice_speed": 1.45,
+    "shorts_voice_speed": 1.3,
     "long_voice_speed": 1.2
   },
   "safety": {
@@ -18,9 +18,12 @@
     "synthetic_media_disclosure": true
   },
   "secrets_required": [
-    "AIHUMAN_GOOGLE_CLIENT_ID",
-    "AIHUMAN_GOOGLE_CLIENT_SECRET",
-    "AIHUMAN_GOOGLE_REFRESH_TOKEN",
+    "AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON",
+    "AIHUMAN_YOUTUBE_CLIENT_ID",
+    "AIHUMAN_YOUTUBE_CLIENT_SECRET",
+    "AIHUMAN_YOUTUBE_REFRESH_TOKEN"
+  ],
+  "public_runtime_config": [
     "AIHUMAN_EXPECTED_CHANNEL_ID",
     "AIHUMAN_SHORT_FOLDER_ID",
     "AIHUMAN_LONG_FOLDER_ID",
