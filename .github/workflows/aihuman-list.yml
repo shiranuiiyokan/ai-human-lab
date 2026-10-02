@@ -1,0 +1,24 @@
+name: AI Human Lab list uploads
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/list-trigger.txt"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AIHUMAN_YOUTUBE_CLIENT_ID: ${{ secrets.AIHUMAN_YOUTUBE_CLIENT_ID }}
+      AIHUMAN_YOUTUBE_CLIENT_SECRET: ${{ secrets.AIHUMAN_YOUTUBE_CLIENT_SECRET }}
+      AIHUMAN_YOUTUBE_REFRESH_TOKEN: ${{ secrets.AIHUMAN_YOUTUBE_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install google-api-python-client google-auth
+      - run: python automation/list_recent_uploads.py
