@@ -3,44 +3,86 @@
 AI人物研究だけを処理する。ペット側のDrive / Sheets / GitHub / OAuth / YouTubeには一切触れない。
 
 ## Identity gate
-1. 接続するGoogle Driveは「AI人物研究」アカウントのみ。
-2. Driveユーザーが人物側アカウントであることを確認してから書き込む。
-3. AIHumanLab 配下以外へ人物素材を書き込まない。
-4. PET / DOG / MBTI / CAT / NEWS namespaceを見つけた場合は停止する。
+1. 接続するGoogle Driveは人物側アカウント `yanjiuairenwu@gmail.com` のみ。
+2. 正本Spreadsheetは `AIHumanResearch_Master_v1.0` / ID `1Lliq2vUmS5e_GSGLaha4xj-lfk4WZIVzpt523qA-ukY` のみ。
+3. Driveは `AIHumanLab` 配下だけに書き込む。
+4. GitHubは `shiranuiiyokan/ai-human-lab` だけに書き込む。
+5. PET / DOG / MBTI / CAT / NEWS namespace、ペット用Drive、dog-video-maker を見つけた場合は停止する。
+6. 有料API、有料TTS、有料動画生成、有料ストレージは禁止。
+
+## Config first
+毎回最初に `Automation_Config` を読む。
+- `PET_WRITE_BLOCK=TRUE` でなければ停止。
+- `PROJECT_NAMESPACE=AIHUMAN` でなければ停止。
+- `RUN_MODE=CANARY_PRIVATE` の間は、Shortsを最古1件だけ制作し、Longは制作しない。
+- `RUN_MODE=PRODUCTION` になった後だけ `DAILY_SHORTS` / `WEEKLY_LONG` に従う。
+- `AUTO_PUBLISH=FALSE` の間は manifest の `youtube.publish_at` を null または省略し、必ず非公開アップロードにする。
+- `AUTO_PUBLISH=TRUE` のときだけ Production_Queue の公開日・公開枠を使用する。
 
 ## Queue
-人物側 Google Sheets「AIHumanResearch_Master_v1.0」の Production_Queue だけを正本とする。
-status=queued かつ production_date<=翌日の対象から、Shortを最大2件。
-週次Longは、その週の結果が十分ある場合のみ最大1件。
+`Production_Queue` の `status=queued` だけを対象にし、production_date 昇順を基本に priority を考慮する。
+同じ queue_id / experiment_id で人物側Driveに着手済みフォルダがある場合は重複制作しない。
 
 ## Content
-- 人物は原則20歳以上の日本人成人。
-- 未成年を生成しない。
-- ヌード、下着見せ目的、性的部位の強調、露骨な性的表現は使わない。
-- 盗撮・覗き見・無断撮影の再現はしない。
-- 「友人が普通のスマホで撮った自然なスナップ」は可。
-- 比較実験は原則1回1変数。他条件を固定。
-- 人物の美しさより、普通っぽさ、生活感、少しの不完全さ、自然な姿勢を優先。
-- scene画像には文字を焼き込まない。表示文字は overlay_text に分離。
-- リアルなAI人物を使うため manifest の contains_synthetic_media=true。
-- 有料API、有料TTS、有料動画生成、有料ストレージは禁止。
+- 人物は20歳以上の成人のみ。年齢が曖昧に見える生成はFAIL。
+- 日本人成人を基本とする。
+- ヌード、下着見せ目的、性的部位の強調、露骨な性的表現は禁止。
+- 盗撮・覗き見・無断撮影の再現は禁止。
+- 友人が普通のスマホで撮った自然なスナップは可。
+- 比較実験は原則1回1変数。Research_Master の control_conditions を固定。
+- 「美人だから」だけの比較にしない。自然さ、親しみ、AIっぽさ、雰囲気など企画の検証軸を明確にする。
+- scene画像には文字を焼き込まない。表示文字は `overlay_text` に分離。
+- リアルなAI人物を使うため `contains_synthetic_media=true`。
+- 人物は過度なモデル顔・広告写真・完璧ポーズに寄せず、普通のスマホ写真らしい少しの不完全さを残す。
 
-## Short format
-- 9:16 / 1080x1920 / 30fps
-- 5〜8 scenes
-- 30〜55秒
-- 構成: hook → 条件A → 条件B → 観察 → コメント参加
-- 同じ距離・姿勢・背景を連続させない。ただしA/B比較sceneは比較条件以外を固定。
+## Script / audio
+- Shortsは30〜55秒を基本。
+- 先に動画1本として自然につながるナレーション全文を完成させる。
+- sceneごとに独立した文章を並べて、音声がぶつ切りに聞こえる構成にしない。
+- narrationは漢字かな混じりの自然な日本語。
+- 全文ひらがな化は禁止。
+- 読み補正は必要な語だけ各sceneの `pronunciation` 辞書へ入れる。
+- 基本構成: hook → 条件固定説明 → A/B比較 → 観察 → 視聴者への問い。
+- VOICEVOXは人物側production設定に従う。現在は春日部つむぎ / speed 1.30。
 
-## Job folder
-scheduled_assets/shorts または scheduled_assets/long の直下に1動画1フォルダを作る。
+## Visual design
+Shortsは9:16 / 1080x1920 / 30fps、原則6scene。
+ただしA/B比較の成立を最優先し、比較sceneは変更変数以外を可能な限り固定する。
+
+各sceneについて画像生成前に以下を決める:
+- scene_id
+- purpose
+- image_format
+- main_subject
+- composition
+- camera_distance
+- camera_angle
+- background
+- variable_state
+- fixed_conditions
+- narration
+- overlay_text
+- pronunciation
+
+自然さのためのsceneと、厳密比較のsceneを区別する。
+比較scene A/Bでは同一人物感、服装、背景、照明、カメラ位置を固定し、指定変数だけ変える。
+補助sceneでは距離・角度・背景に変化をつけて動画全体の単調さを避ける。
+
+## Drive job
+保存先:
+- Short: `AIHumanLab/scheduled_assets/shorts`
+- Long: `AIHumanLab/scheduled_assets/long`
+
+1動画1フォルダ。フォルダ名は `YYYYMMDD_AIHUMAN-<queue_id>` を基本とする。
 
 必須:
-- manifest.json
-- scene_01.png ... scene_N.png
+- `manifest.json`
+- `scene_plan.json`
+- `scene_qc.json`
+- `scene_01.png ... scene_N.png`
 
-manifestには以下を必ず入れる:
-- project_id: AIHUMAN-...
+manifest必須:
+- project_id: `AIHUMAN-...`
 - experiment_id
 - format: short / long
 - variable_under_test
@@ -48,10 +90,29 @@ manifestには以下を必ず入れる:
 - scenes[].image
 - scenes[].narration
 - scenes[].overlay_text
+- 必要なら scenes[].pronunciation
 - youtube.title
 - youtube.description
-- youtube.publish_at
 - youtube.made_for_kids=false
 - youtube.contains_synthetic_media=true
+- CANARY_PRIVATE / AUTO_PUBLISH=FALSE の間は youtube.publish_at を入れない
 
-生成後、Production_Queue の status を generated に更新する。
+## QC
+全scene生成後に確認:
+- 画像欠損0
+- 成人20+が明確
+- 手指・顔・服の重大破綻なし
+- A/Bで変更変数以外が不用意に変わっていない
+- 同じ補助構図が連続しすぎていない
+- 画像内に不要な文字がない
+- narrationを連結したとき自然な一本の文章になる
+- 読み間違いリスク語をpronunciationへ登録
+FAILがあればそのsceneだけ差し替える。
+
+## Completion / trigger
+Driveに全scene + manifest + scene_plan + scene_qc が揃い、再読込確認できたときだけ Production_Queue の status を `generated` に更新する。
+
+その後だけ、GitHub repo `shiranuiiyokan/ai-human-lab` の `.github/runtime-trigger.txt` を現在時刻・project_idが分かる内容へ更新してproduction workflowを起動する。
+
+GitHub/YouTubeの結果を確認できていない段階で「投稿完了」とは扱わない。
+CANARY_PRIVATE中はYouTubeは非公開のみ。公開予約は行わない。
