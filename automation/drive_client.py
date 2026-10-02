@@ -3,28 +3,19 @@ import json
 import os
 from pathlib import Path
 
-from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
-SCOPES = [
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/youtube.upload",
-    "https://www.googleapis.com/auth/youtube.readonly",
-]
+DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 
-def credentials():
-    return Credentials(
-        token=None,
-        refresh_token=os.environ["AIHUMAN_GOOGLE_REFRESH_TOKEN"],
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=os.environ["AIHUMAN_GOOGLE_CLIENT_ID"],
-        client_secret=os.environ["AIHUMAN_GOOGLE_CLIENT_SECRET"],
-        scopes=SCOPES,
-    )
+def drive_credentials():
+    raw = os.environ["AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON"]
+    info = json.loads(raw)
+    return service_account.Credentials.from_service_account_info(info, scopes=DRIVE_SCOPES)
 
 def build_drive_service():
-    return build("drive", "v3", credentials=credentials(), cache_discovery=False)
+    return build("drive", "v3", credentials=drive_credentials(), cache_discovery=False)
 
 def list_children(service, folder_id):
     q = f"'{folder_id}' in parents and trashed=false"
