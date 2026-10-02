@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -67,12 +68,34 @@ def make_frame(image_path: Path, output_path: Path, overlay_text: str, width: in
             draw.text((x,y), line, font=font, fill=(255,255,255,255))
     base.save(output_path, quality=94)
 
+def apply_pronunciation(text: str, scenes: list[dict]):
+    mapping = {}
+    for sc in scenes:
+        p = sc.get("pronunciation") or {}
+        if isinstance(p, dict):
+            mapping.update({str(k): str(v) for k, v in p.items() if k and v})
+    for surface in sorted(mapping, key=len, reverse=True):
+        text = text.replace(surface, mapping[surface])
+    return text
+
+def scene_durations(scenes: list[dict], total: float):
+    explicit = [sc.get("duration_seconds") for sc in scenes]
+    if all(isinstance(x, (int, float)) and x > 0 for x in explicit):
+        raw = [float(x) for x in explicit]
+    else:
+        # Keep visual changes close to narration content without splitting the TTS.
+        raw = [max(12, len(re.sub(r"\s+", "", (sc.get("narration") or "")))) for sc in scenes]
+    s = sum(raw) or 1.0
+    durations = [max(1.5, total * x / s) for x in raw]
+    scale = total / sum(durations)
+    return [x * scale for x in durations]
+
 def render(job: dict, work_dir: Path, output_path: Path):
     fmt = (job.get("format") or "short").lower()
     if fmt == "long":
         width,height,speed=1920,1080,float(os.getenv("LONG_VOICE_SPEED","1.20"))
     else:
-        width,height,speed=1080,1920,float(os.getenv("SHORTS_VOICE_SPEED","1.45"))
+        width,height,speed=1080,1920,float(os.getenv("SHORTS_VOICE_SPEED","1.35"))
 
     scenes=job.get("scenes") or []
     if not scenes:
@@ -80,35 +103,49 @@ def render(job: dict, work_dir: Path, output_path: Path):
 
     with tempfile.TemporaryDirectory() as td_raw:
         td=Path(td_raw)
-        clip_paths=[]
+        frame_paths=[]
         for idx,sc in enumerate(scenes,1):
             image_path=work_dir / sc["image"]
             if not image_path.exists():
                 raise FileNotFoundError(image_path)
             frame=td/f"frame_{idx:03d}.jpg"
-            wav=td/f"audio_{idx:03d}.wav"
-            clip=td/f"clip_{idx:03d}.mp4"
             make_frame(image_path,frame,sc.get("overlay_text",""),width,height)
-            narration=(sc.get("narration") or "").strip()
-            if narration:
-                synthesize(narration,wav,speed)
-                dur=audio_duration(wav)+0.30
-                run(["ffmpeg","-y","-loop","1","-i",frame,"-i",wav,"-t",f"{dur:.3f}",
-                     "-vf",f"scale={width}:{height},format=yuv420p","-r","30",
-                     "-c:v","libx264","-preset","veryfast","-c:a","aac","-b:a","160k",
-                     "-ar","48000","-shortest",clip])
-            else:
-                dur=float(sc.get("duration_seconds",3.0))
-                run(["ffmpeg","-y","-loop","1","-i",frame,"-t",str(dur),
-                     "-f","lavfi","-i","anullsrc=r=48000:cl=stereo",
-                     "-vf",f"scale={width}:{height},format=yuv420p","-r","30",
-                     "-c:v","libx264","-preset","veryfast","-c:a","aac","-b:a","160k",
-                     "-shortest",clip])
-            clip_paths.append(clip)
+            frame_paths.append(frame)
+
+        narration_parts=[(sc.get("narration") or "").strip() for sc in scenes]
+        full_narration="".join(x for x in narration_parts if x)
+        if full_narration:
+            # One synthesis call per video: avoids the clipped, sentence-by-sentence voice feel.
+            spoken=apply_pronunciation(full_narration, scenes)
+            wav=td/"narration.wav"
+            synthesize(spoken,wav,speed)
+            total=audio_duration(wav)+0.25
+        else:
+            wav=None
+            total=sum(float(sc.get("duration_seconds",3.0)) for sc in scenes)
+
+        durations=scene_durations(scenes,total)
+        clips=[]
+        for idx,(frame,dur) in enumerate(zip(frame_paths,durations),1):
+            clip=td/f"clip_{idx:03d}.mp4"
+            run(["ffmpeg","-y","-loop","1","-i",frame,"-t",f"{dur:.3f}",
+                 "-vf",f"scale={width}:{height},format=yuv420p","-r","30",
+                 "-c:v","libx264","-preset","veryfast","-an",clip])
+            clips.append(clip)
 
         concat=td/"concat.txt"
-        concat.write_text("".join(f"file '{p.as_posix()}'\n" for p in clip_paths),encoding="utf-8")
+        concat.write_text("".join(f"file '{p.as_posix()}'\n" for p in clips),encoding="utf-8")
+        video_only=td/"video.mp4"
         run(["ffmpeg","-y","-f","concat","-safe","0","-i",concat,
-             "-c:v","libx264","-preset","veryfast","-c:a","aac","-b:a","160k",
-             "-movflags","+faststart",output_path])
+             "-c:v","libx264","-preset","veryfast","-an",video_only])
+
+        if wav:
+            run(["ffmpeg","-y","-i",video_only,"-i",wav,
+                 "-c:v","copy","-c:a","aac","-b:a","160k","-ar","48000",
+                 "-shortest","-movflags","+faststart",output_path])
+        else:
+            run(["ffmpeg","-y","-i",video_only,
+                 "-f","lavfi","-i","anullsrc=r=48000:cl=stereo",
+                 "-c:v","copy","-c:a","aac","-b:a","160k","-shortest",
+                 "-movflags","+faststart",output_path])
     return output_path
