@@ -51,8 +51,13 @@ def upload_video(video_path: Path, job: dict):
         description += ("\n\n" if description else "") + disclosure
 
     publish_at = y.get("publish_at")
+    privacy_status = str(y.get("privacy_status", "private")).lower()
+    if privacy_status not in {"private", "unlisted", "public"}:
+        raise ValueError("youtube.privacy_status must be private, unlisted, or public")
+    if publish_at:
+        privacy_status = "private"
     status = {
-        "privacyStatus": "private",
+        "privacyStatus": privacy_status,
         "selfDeclaredMadeForKids": False,
         "containsSyntheticMedia": True,
     }
