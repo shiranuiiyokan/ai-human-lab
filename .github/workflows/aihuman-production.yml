@@ -1,0 +1,81 @@
+name: AI Human Lab production
+
+on:
+  workflow_dispatch:
+    inputs:
+      short_limit:
+        description: "Max Shorts jobs"
+        required: true
+        default: "3"
+      long_limit:
+        description: "Max Long jobs"
+        required: true
+        default: "1"
+
+concurrency:
+  group: ai-human-lab-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PROJECT_NAMESPACE: AIHUMAN
+      AIHUMAN_GOOGLE_CLIENT_ID: ${{ secrets.AIHUMAN_GOOGLE_CLIENT_ID }}
+      AIHUMAN_GOOGLE_CLIENT_SECRET: ${{ secrets.AIHUMAN_GOOGLE_CLIENT_SECRET }}
+      AIHUMAN_GOOGLE_REFRESH_TOKEN: ${{ secrets.AIHUMAN_GOOGLE_REFRESH_TOKEN }}
+      AIHUMAN_EXPECTED_CHANNEL_ID: ${{ secrets.AIHUMAN_EXPECTED_CHANNEL_ID }}
+      AIHUMAN_SHORT_FOLDER_ID: ${{ secrets.AIHUMAN_SHORT_FOLDER_ID }}
+      AIHUMAN_LONG_FOLDER_ID: ${{ secrets.AIHUMAN_LONG_FOLDER_ID }}
+      AIHUMAN_DONE_FOLDER_ID: ${{ secrets.AIHUMAN_DONE_FOLDER_ID }}
+      AIHUMAN_ERROR_FOLDER_ID: ${{ secrets.AIHUMAN_ERROR_FOLDER_ID }}
+      SHORT_JOB_LIMIT: ${{ inputs.short_limit }}
+      LONG_JOB_LIMIT: ${{ inputs.long_limit }}
+      SHORTS_VOICE_SPEED: "1.45"
+      LONG_VOICE_SPEED: "1.20"
+      VOICEVOX_SPEAKER_NAME: "ずんだもん"
+      VOICEVOX_STYLE_NAME: "ノーマル"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-cjk
+          pip install -r requirements.txt
+
+      - name: Identity safety gate
+        run: |
+          test "$PROJECT_NAMESPACE" = "AIHUMAN"
+          test -n "$AIHUMAN_GOOGLE_CLIENT_ID"
+          test -n "$AIHUMAN_GOOGLE_CLIENT_SECRET"
+          test -n "$AIHUMAN_GOOGLE_REFRESH_TOKEN"
+          test -n "$AIHUMAN_EXPECTED_CHANNEL_ID"
+          test -n "$AIHUMAN_SHORT_FOLDER_ID"
+          test -n "$AIHUMAN_LONG_FOLDER_ID"
+          test -n "$AIHUMAN_DONE_FOLDER_ID"
+          test -n "$AIHUMAN_ERROR_FOLDER_ID"
+
+      - name: Start VOICEVOX
+        run: |
+          docker pull voicevox/voicevox_engine:cpu-latest
+          docker run -d --name voicevox -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:50021/version >/dev/null; then
+              echo "VOICEVOX ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          docker logs voicevox || true
+          exit 1
+
+      - name: Render and upload HUMAN jobs
+        run: python automation/pipeline.py
