@@ -1,13 +1,27 @@
 import os
 from pathlib import Path
 
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from drive_client import credentials
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+]
+
+def youtube_credentials():
+    return Credentials(
+        token=None,
+        refresh_token=os.environ["AIHUMAN_YOUTUBE_REFRESH_TOKEN"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.environ["AIHUMAN_YOUTUBE_CLIENT_ID"],
+        client_secret=os.environ["AIHUMAN_YOUTUBE_CLIENT_SECRET"],
+        scopes=YOUTUBE_SCOPES,
+    )
 
 def build_youtube_service():
-    return build("youtube", "v3", credentials=credentials(), cache_discovery=False)
+    return build("youtube", "v3", credentials=youtube_credentials(), cache_discovery=False)
 
 def verify_channel(youtube):
     expected = os.environ["AIHUMAN_EXPECTED_CHANNEL_ID"].strip()
