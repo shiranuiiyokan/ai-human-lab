@@ -1,6 +1,10 @@
 name: AI Human Lab smoke test
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/smoke-trigger-v1.txt"
   workflow_dispatch:
 
 permissions:
@@ -9,7 +13,7 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       PROJECT_NAMESPACE: AIHUMAN
       AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.AIHUMAN_GOOGLE_SERVICE_ACCOUNT_JSON }}
@@ -18,19 +22,20 @@ jobs:
       AIHUMAN_YOUTUBE_REFRESH_TOKEN: ${{ secrets.AIHUMAN_YOUTUBE_REFRESH_TOKEN }}
       AIHUMAN_EXPECTED_CHANNEL_ID: "UCMiOwznPHDPDlbNIQqEnNSQ"
       AIHUMAN_SHORT_FOLDER_ID: "1nRJhyvIzWBZsFpjLh1MsALol-pEkgEob"
+      SHORTS_VOICE_SPEED: "1.30"
+      VOICEVOX_SPEAKER_NAME: "春日部つむぎ"
+      VOICEVOX_STYLE_NAME: "ノーマル"
       VOICEVOX_CREDIT: ""
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg fonts-noto-cjk
           pip install -r requirements.txt
-
       - name: Identity safety gate
         run: |
           test "$PROJECT_NAMESPACE" = "AIHUMAN"
@@ -39,6 +44,17 @@ jobs:
           test -n "$AIHUMAN_YOUTUBE_CLIENT_SECRET"
           test -n "$AIHUMAN_YOUTUBE_REFRESH_TOKEN"
           test "$AIHUMAN_EXPECTED_CHANNEL_ID" = "UCMiOwznPHDPDlbNIQqEnNSQ"
-
-      - name: Run Drive + YouTube smoke test
+      - name: Drive + YouTube auth smoke
         run: python automation/smoke_test.py
+      - name: Start VOICEVOX
+        run: |
+          docker pull voicevox/voicevox_engine:cpu-latest
+          docker run -d --name voicevox -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:50021/version >/dev/null; then exit 0; fi
+            sleep 5
+          done
+          docker logs voicevox || true
+          exit 1
+      - name: Continuous narration render smoke
+        run: python automation/render_smoke_test.py
