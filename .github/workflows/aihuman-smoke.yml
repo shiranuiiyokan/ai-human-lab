@@ -1,10 +1,6 @@
 name: AI Human Lab smoke test
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/smoke-trigger-v1.txt"
   workflow_dispatch:
 
 permissions:
