@@ -1,0 +1,15 @@
+AIHUMAN PET WRITE BLOCK
+
+This repository is ONLY for AI人物研究.
+
+FORBIDDEN:
+- DogVideoFactory
+- dog-video-maker writes
+- PET / DOG / MBTI / CAT / NEWS Drive folders
+- pet Production Queue
+- pet YouTube channel or OAuth credentials
+- pet GitHub secrets
+
+Every runtime must require PROJECT_NAMESPACE=AIHUMAN.
+YouTube upload must verify the authenticated channel ID before uploading.
+If any identity check fails, abort without writing or moving anything.
