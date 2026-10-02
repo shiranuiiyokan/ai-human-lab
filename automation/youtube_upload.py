@@ -42,7 +42,8 @@ def upload_video(video_path: Path, job: dict):
 
     y = job.get("youtube", {})
     description = y.get("description", "").rstrip()
-    speaker = os.getenv("VOICEVOX_SPEAKER_NAME", "春日部つむぎ")\n    credit = os.getenv("VOICEVOX_CREDIT", f"VOICEVOX:{speaker}")
+    speaker = os.getenv("VOICEVOX_SPEAKER_NAME", "春日部つむぎ")
+    credit = os.getenv("VOICEVOX_CREDIT", f"VOICEVOX:{speaker}")
     if credit and credit not in description:
         description += ("\n\n" if description else "") + credit
     disclosure = "この動画にはAI生成の人物画像・映像が含まれます。"
