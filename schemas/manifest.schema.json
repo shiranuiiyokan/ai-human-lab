@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AIHumanManifest",
+  "type": "object",
+  "required": [
+    "project_id",
+    "format",
+    "subject_age_min",
+    "youtube",
+    "scenes"
+  ],
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "pattern": "^AIHUMAN-"
+    },
+    "experiment_id": {
+      "type": "string"
+    },
+    "format": {
+      "enum": [
+        "short",
+        "long"
+      ]
+    },
+    "subject_age_min": {
+      "type": "integer",
+      "minimum": 20
+    },
+    "variable_under_test": {
+      "type": "string"
+    },
+    "youtube": {
+      "type": "object",
+      "required": [
+        "title",
+        "made_for_kids",
+        "contains_synthetic_media"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "publish_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "made_for_kids": {
+          "const": false
+        },
+        "contains_synthetic_media": {
+          "const": true
+        }
+      }
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "image",
+          "narration"
+        ],
+        "properties": {
+          "image": {
+            "type": "string"
+          },
+          "narration": {
+            "type": "string"
+          },
+          "overlay_text": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
