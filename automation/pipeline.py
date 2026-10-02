@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import zipfile
 from pathlib import Path
 
 from drive_client import build_drive_service, download_job_folder, list_child_folders, move_folder, upsert_json
@@ -34,6 +35,12 @@ def process_one(service, category, parent_id, folder, done_id, error_id):
     try:
         download_job_folder(service, folder["id"], job_dir)
         manifest = job_dir / "manifest.json"
+        if not manifest.exists():
+            zips = sorted(job_dir.glob("*.zip"))
+            if zips:
+                with zipfile.ZipFile(zips[0], "r") as zf:
+                    zf.extractall(job_dir)
+                manifest = job_dir / "manifest.json"
         if not manifest.exists():
             raise FileNotFoundError("manifest.json")
         job = json.loads(manifest.read_text(encoding="utf-8"))
