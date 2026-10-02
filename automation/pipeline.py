@@ -50,7 +50,10 @@ def process_one(service, category, parent_id, folder, done_id, error_id):
         render(job, job_dir, output)
         result = upload_video(output, job)
         result.update({"project_id":job["project_id"],"category":category})
-        upsert_json(service, folder["id"], "youtube_result.json", result)
+        try:
+            upsert_json(service, folder["id"], "youtube_result.json", result)
+        except Exception as log_exc:
+            print("WARN: could not create/update youtube_result.json:", log_exc, flush=True)
         move_folder(service, folder["id"], parent_id, done_id)
         print("SUCCESS", json.dumps(result, ensure_ascii=False), flush=True)
         return True
@@ -58,9 +61,12 @@ def process_one(service, category, parent_id, folder, done_id, error_id):
         err={"folder":folder.get("name"),"type":type(exc).__name__,"message":str(exc)}
         try:
             upsert_json(service, folder["id"], "error.json", err)
+        except Exception as log_exc:
+            print("WARN: could not create/update error.json:", log_exc, flush=True)
+        try:
             move_folder(service, folder["id"], parent_id, error_id)
         except Exception as move_exc:
-            print("ERROR while recording failure:", move_exc, flush=True)
+            print("ERROR while moving failed job:", move_exc, flush=True)
         print("FAIL", json.dumps(err, ensure_ascii=False), flush=True)
         return False
 
