@@ -86,3 +86,7 @@ jobs:
 
       - name: Render and upload HUMAN jobs
         run: python automation/pipeline.py
+
+      - name: Reconcile publication and results
+        if: always()
+        run: python automation/queue_sync.py

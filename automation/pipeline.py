@@ -8,6 +8,7 @@ from drive_client import build_drive_service, download_job_folder, list_child_fo
 from render_video import render
 from youtube_upload import upload_video
 from voicevox import wait_until_ready
+from queue_sync import preflight, log_result, log_error
 
 WORK_ROOT = Path("work")
 PROJECT_NAMESPACE = os.getenv("PROJECT_NAMESPACE", "")
@@ -32,6 +33,8 @@ def validate_job(job):
 def process_one(service, category, parent_id, folder, done_id, error_id):
     job_dir = WORK_ROOT / category / folder["id"]
     shutil.rmtree(job_dir, ignore_errors=True)
+    job = None
+    uploaded = False
     try:
         download_job_folder(service, folder["id"], job_dir)
         manifest = job_dir / "manifest.json"
@@ -45,20 +48,30 @@ def process_one(service, category, parent_id, folder, done_id, error_id):
             raise FileNotFoundError("manifest.json")
         job = json.loads(manifest.read_text(encoding="utf-8"))
         validate_job(job)
+        if job.get("queue_id"):
+            sync = preflight(job)
         wait_until_ready()
         output = job_dir / "rendered.mp4"
         render(job, job_dir, output)
         result = upload_video(output, job)
+        uploaded = True
         result.update({"project_id":job["project_id"],"category":category})
         try:
             upsert_json(service, folder["id"], "youtube_result.json", result)
         except Exception as log_exc:
             print("WARN: could not create/update youtube_result.json:", log_exc, flush=True)
+        if job.get("queue_id"):
+            log_result(sync, job, result)
         move_folder(service, folder["id"], parent_id, done_id)
         print("SUCCESS", json.dumps(result, ensure_ascii=False), flush=True)
         return True
     except Exception as exc:
-        err={"folder":folder.get("name"),"type":type(exc).__name__,"message":str(exc)}
+        err={"folder":folder.get("name"),"type":type(exc).__name__,"message":str(exc),"uploaded":uploaded}
+        if job and job.get("queue_id"):
+            try:
+                log_error(job, exc)
+            except Exception as sync_exc:
+                print("QUEUE LOG ERROR", str(sync_exc), flush=True)
         try:
             upsert_json(service, folder["id"], "error.json", err)
         except Exception as log_exc:
