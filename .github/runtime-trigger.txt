@@ -1,1 +1,1 @@
-2026-10-03T08:34:00+09:00 recover HR001/HR002 before any upload; precreated result/error journals ready. HR001 public, HR002 22:00 JST.
+2026-10-03T15:00:00+09:00 production HR031; queue Q-20261004-1200; Drive processing folder 15A7nGc4PAwTOdqOkyLcgYMbzIZNQi_G8; publish 2026-10-04 08:00 JST; precreated result/error journals ready; do not process PET.\n
