@@ -1,1 +1,1 @@
-2026-10-03T15:00:00+09:00 production HR031; queue Q-20261004-1200; Drive processing folder 15A7nGc4PAwTOdqOkyLcgYMbzIZNQi_G8; publish 2026-10-04 08:00 JST; precreated result/error journals ready; do not process PET.\n
+2026-10-03T15:03:00+09:00 production HR031 retry after folder routing correction; queue Q-20261004-1200; Drive shorts folder job 15A7nGc4PAwTOdqOkyLcgYMbzIZNQi_G8; publish 2026-10-04 08:00 JST; precreated result/error journals ready; prior run processed 0 and uploaded nothing; do not process PET.\n
